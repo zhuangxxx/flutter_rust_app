@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart' hide Size;
 import 'package:flutter_rust_app/bridge_generated.dart';
-import 'package:flutter_rust_app/off_topic_code.dart';
 
 // Simple Flutter code. If you are not familiar with Flutter, this may sounds a bit long. But indeed
 // it is quite trivial and Flutter is just like that. Please refer to Flutter's tutorial to learn Flutter.
@@ -17,7 +15,7 @@ late final dylib = Platform.isIOS
     : Platform.isMacOS
         ? DynamicLibrary.executable()
         : DynamicLibrary.open(path);
-late final api = FlutterRustBridgeExampleImpl(dylib);
+late final api = FlutterRustAppImpl(dylib);
 
 void main() => runApp(const MyApp());
 
@@ -29,34 +27,48 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Uint8List? exampleImage;
-  String? exampleText;
+  late int _count;
 
   @override
   void initState() {
     super.initState();
-    runPeriodically(_callExampleFfiOne);
-    _callExampleFfiTwo();
+    _count = 1;
   }
 
   @override
-  Widget build(BuildContext context) => buildPageUi(
-        exampleImage,
-        exampleText,
+  Widget build(BuildContext context) => MaterialApp(
+        home: Scaffold(
+          appBar: AppBar(title: const Text('Flutter Rust Application')),
+          body: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Container(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text("$_count"),
+              ),
+              Container(height: 16),
+              Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                TextButton(
+                  onPressed: _callMul2,
+                  child: const Text('×2'),
+                ),
+                TextButton(
+                  onPressed: () => setState(() {
+                    _count = 0;
+                  }),
+                  child: const Text('清零'),
+                )
+              ])
+            ],
+          ),
+        ),
       );
 
-  Future<void> _callExampleFfiOne() async {
-    final receivedImage = await api.drawMandelbrot(
-        imageSize: Size(width: 50, height: 50),
-        zoomPoint: examplePoint,
-        scale: generateScale(),
-        numThreads: 4);
-    if (mounted) setState(() => exampleImage = receivedImage);
-  }
-
-  Future<void> _callExampleFfiTwo() async {
-    final receivedText =
-        await api.passingComplexStructs(root: createExampleTree());
-    if (mounted) setState(() => exampleText = receivedText);
+  Future<void> _callMul2() async {
+    final value = await api.mul2(n: _count);
+    setState(() {
+      _count = value;
+    });
   }
 }
