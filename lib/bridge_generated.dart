@@ -12,9 +12,29 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'dart:ffi' as ffi;
 
 abstract class FlutterRustApp {
-  Future<int> mul2({required int n, dynamic hint});
+  Future<List<GeoMap>> loadGeojson({required String path, dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kMul2ConstMeta;
+  FlutterRustBridgeTaskConstMeta get kLoadGeojsonConstMeta;
+}
+
+class GeoMap {
+  final String name;
+  final List<Position> coordinates;
+
+  GeoMap({
+    required this.name,
+    required this.coordinates,
+  });
+}
+
+class Position {
+  final double latitude;
+  final double longitude;
+
+  Position({
+    required this.latitude,
+    required this.longitude,
+  });
 }
 
 class FlutterRustAppImpl extends FlutterRustBridgeBase<FlutterRustAppWire>
@@ -24,24 +44,35 @@ class FlutterRustAppImpl extends FlutterRustBridgeBase<FlutterRustAppWire>
 
   FlutterRustAppImpl.raw(FlutterRustAppWire inner) : super(inner);
 
-  Future<int> mul2({required int n, dynamic hint}) =>
+  Future<List<GeoMap>> loadGeojson({required String path, dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
-        callFfi: (port_) => inner.wire_mul2(port_, _api2wire_u32(n)),
-        parseSuccessData: _wire2api_u32,
-        constMeta: kMul2ConstMeta,
-        argValues: [n],
+        callFfi: (port_) =>
+            inner.wire_load_geojson(port_, _api2wire_String(path)),
+        parseSuccessData: _wire2api_list_geo_map,
+        constMeta: kLoadGeojsonConstMeta,
+        argValues: [path],
         hint: hint,
       ));
 
-  FlutterRustBridgeTaskConstMeta get kMul2ConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kLoadGeojsonConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "mul2",
-        argNames: ["n"],
+        debugName: "load_geojson",
+        argNames: ["path"],
       );
 
   // Section: api2wire
-  int _api2wire_u32(int raw) {
+  ffi.Pointer<wire_uint_8_list> _api2wire_String(String raw) {
+    return _api2wire_uint_8_list(utf8.encoder.convert(raw));
+  }
+
+  int _api2wire_u8(int raw) {
     return raw;
+  }
+
+  ffi.Pointer<wire_uint_8_list> _api2wire_uint_8_list(Uint8List raw) {
+    final ans = inner.new_uint_8_list_0(raw.length);
+    ans.ref.ptr.asTypedList(raw.length).setAll(0, raw);
+    return ans;
   }
 
   // Section: api_fill_to_wire
@@ -49,8 +80,48 @@ class FlutterRustAppImpl extends FlutterRustBridgeBase<FlutterRustAppWire>
 }
 
 // Section: wire2api
-int _wire2api_u32(dynamic raw) {
+String _wire2api_String(dynamic raw) {
+  return raw as String;
+}
+
+double _wire2api_f64(dynamic raw) {
+  return raw as double;
+}
+
+GeoMap _wire2api_geo_map(dynamic raw) {
+  final arr = raw as List<dynamic>;
+  if (arr.length != 2)
+    throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+  return GeoMap(
+    name: _wire2api_String(arr[0]),
+    coordinates: _wire2api_list_position(arr[1]),
+  );
+}
+
+List<GeoMap> _wire2api_list_geo_map(dynamic raw) {
+  return (raw as List<dynamic>).map(_wire2api_geo_map).toList();
+}
+
+List<Position> _wire2api_list_position(dynamic raw) {
+  return (raw as List<dynamic>).map(_wire2api_position).toList();
+}
+
+Position _wire2api_position(dynamic raw) {
+  final arr = raw as List<dynamic>;
+  if (arr.length != 2)
+    throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+  return Position(
+    latitude: _wire2api_f64(arr[0]),
+    longitude: _wire2api_f64(arr[1]),
+  );
+}
+
+int _wire2api_u8(dynamic raw) {
   return raw as int;
+}
+
+Uint8List _wire2api_uint_8_list(dynamic raw) {
+  return raw as Uint8List;
 }
 
 // ignore_for_file: camel_case_types, non_constant_identifier_names, avoid_positional_boolean_parameters, annotate_overrides, constant_identifier_names
@@ -75,20 +146,37 @@ class FlutterRustAppWire implements FlutterRustBridgeWireBase {
           lookup)
       : _lookup = lookup;
 
-  void wire_mul2(
+  void wire_load_geojson(
     int port_,
-    int n,
+    ffi.Pointer<wire_uint_8_list> path,
   ) {
-    return _wire_mul2(
+    return _wire_load_geojson(
       port_,
-      n,
+      path,
     );
   }
 
-  late final _wire_mul2Ptr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Uint32)>>(
-          'wire_mul2');
-  late final _wire_mul2 = _wire_mul2Ptr.asFunction<void Function(int, int)>();
+  late final _wire_load_geojsonPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Int64, ffi.Pointer<wire_uint_8_list>)>>('wire_load_geojson');
+  late final _wire_load_geojson = _wire_load_geojsonPtr
+      .asFunction<void Function(int, ffi.Pointer<wire_uint_8_list>)>();
+
+  ffi.Pointer<wire_uint_8_list> new_uint_8_list_0(
+    int len,
+  ) {
+    return _new_uint_8_list_0(
+      len,
+    );
+  }
+
+  late final _new_uint_8_list_0Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_uint_8_list> Function(
+              ffi.Int32)>>('new_uint_8_list_0');
+  late final _new_uint_8_list_0 = _new_uint_8_list_0Ptr
+      .asFunction<ffi.Pointer<wire_uint_8_list> Function(int)>();
 
   void free_WireSyncReturnStruct(
     WireSyncReturnStruct val,
@@ -117,6 +205,13 @@ class FlutterRustAppWire implements FlutterRustBridgeWireBase {
           'store_dart_post_cobject');
   late final _store_dart_post_cobject = _store_dart_post_cobjectPtr
       .asFunction<void Function(DartPostCObjectFnType)>();
+}
+
+class wire_uint_8_list extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint8> ptr;
+
+  @ffi.Int32()
+  external int len;
 }
 
 typedef DartPostCObjectFnType = ffi.Pointer<

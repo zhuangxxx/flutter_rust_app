@@ -38,6 +38,10 @@ dependencies:
   cupertino_icons: ^1.0.5
   freezed_annotation: ^2.1.0
 
+  # Customer
+  flutter_map: ^2.1.0
+  latlong2: ^0.8.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

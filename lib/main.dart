@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart' hide Size;
 import 'package:flutter_rust_app/bridge_generated.dart';
+import 'package:flutter_rust_app/map.dart';
 
 // Simple Flutter code. If you are not familiar with Flutter, this may sounds a bit long. But indeed
 // it is quite trivial and Flutter is just like that. Please refer to Flutter's tutorial to learn Flutter.
@@ -27,48 +28,19 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late int _count;
+  late List<GeoMap> _geoMapList = <GeoMap>[];
 
   @override
   void initState() {
     super.initState();
-    _count = 1;
+    _callLoadGeojson("static/data/340800_full.json");
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        home: Scaffold(
-          appBar: AppBar(title: const Text('Flutter Rust Application')),
-          body: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Container(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text("$_count"),
-              ),
-              Container(height: 16),
-              Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-                TextButton(
-                  onPressed: _callMul2,
-                  child: const Text('×2'),
-                ),
-                TextButton(
-                  onPressed: () => setState(() {
-                    _count = 0;
-                  }),
-                  child: const Text('清零'),
-                )
-              ])
-            ],
-          ),
-        ),
-      );
+  Widget build(BuildContext context) => buildMapPageUi(_geoMapList);
 
-  Future<void> _callMul2() async {
-    final value = await api.mul2(n: _count);
-    setState(() {
-      _count = value;
-    });
+  Future<void> _callLoadGeojson(String path) async {
+    final loadedGeoMapList = await api.loadGeojson(path: path);
+    if (mounted) setState(() => _geoMapList = loadedGeoMapList);
   }
 }

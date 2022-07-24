@@ -18,27 +18,43 @@ use flutter_rust_bridge::*;
 // Section: wire functions
 
 #[no_mangle]
-pub extern "C" fn wire_mul2(port_: i64, n: u32) {
+pub extern "C" fn wire_load_geojson(port_: i64, path: *mut wire_uint_8_list) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
-            debug_name: "mul2",
+            debug_name: "load_geojson",
             port: Some(port_),
             mode: FfiCallMode::Normal,
         },
         move || {
-            let api_n = n.wire2api();
-            move |task_callback| Ok(mul2(api_n))
+            let api_path = path.wire2api();
+            move |task_callback| load_geojson(api_path)
         },
     )
 }
 
 // Section: wire structs
 
+#[repr(C)]
+#[derive(Clone)]
+pub struct wire_uint_8_list {
+    ptr: *mut u8,
+    len: i32,
+}
+
 // Section: wrapper structs
 
 // Section: static checks
 
 // Section: allocate functions
+
+#[no_mangle]
+pub extern "C" fn new_uint_8_list_0(len: i32) -> *mut wire_uint_8_list {
+    let ans = wire_uint_8_list {
+        ptr: support::new_leak_vec_ptr(Default::default(), len),
+        len,
+    };
+    support::new_leak_box_ptr(ans)
+}
 
 // Section: impl Wire2Api
 
@@ -59,9 +75,25 @@ where
     }
 }
 
-impl Wire2Api<u32> for u32 {
-    fn wire2api(self) -> u32 {
+impl Wire2Api<String> for *mut wire_uint_8_list {
+    fn wire2api(self) -> String {
+        let vec: Vec<u8> = self.wire2api();
+        String::from_utf8_lossy(&vec).into_owned()
+    }
+}
+
+impl Wire2Api<u8> for u8 {
+    fn wire2api(self) -> u8 {
         self
+    }
+}
+
+impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
+    fn wire2api(self) -> Vec<u8> {
+        unsafe {
+            let wrap = support::box_from_leak_ptr(self);
+            support::vec_from_leak_ptr(wrap.ptr, wrap.len)
+        }
     }
 }
 
@@ -78,6 +110,20 @@ impl<T> NewWithNullPtr for *mut T {
 }
 
 // Section: impl IntoDart
+
+impl support::IntoDart for GeoMap {
+    fn into_dart(self) -> support::DartCObject {
+        vec![self.name.into_dart(), self.coordinates.into_dart()].into_dart()
+    }
+}
+impl support::IntoDartExceptPrimitive for GeoMap {}
+
+impl support::IntoDart for Position {
+    fn into_dart(self) -> support::DartCObject {
+        vec![self.latitude.into_dart(), self.longitude.into_dart()].into_dart()
+    }
+}
+impl support::IntoDartExceptPrimitive for Position {}
 
 // Section: executor
 
